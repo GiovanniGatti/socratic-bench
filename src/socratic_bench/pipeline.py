@@ -1,5 +1,5 @@
 import abc
-from typing import TypeVar, Generic, Optional, Dict, Generator, List, Type, Tuple, Any
+from typing import TypeVar, Generic, Optional, Dict, Generator, List, Tuple, Any, Type
 
 T = TypeVar('T')  # Input or current type
 U = TypeVar('U')  # Output or next type
@@ -76,40 +76,51 @@ class CollectSink(Stage[T, None]):
         self.items.append(sample)
 
 
+class Identity(Stage[T, T]):
+
+    def process(self, sample: T, emitter: Emitter[T]) -> None:
+        emitter.emit(sample)
+
+
 class PipelineStep(Generic[T, U]):
     def __init__(self, previous: Optional['PipelineStep[Any, T]'], stage: Optional[Stage[T, U]]):
         self.previous = previous
         self.stage = stage
 
 
-class SocraticBench(Generic[T]):
+IN = TypeVar('IN')  # Input type for the entire pipeline
+OUT = TypeVar('OUT')  # Output type for the entire pipeline
 
-    def __init__(self, source: DataSource[T], step: Optional[PipelineStep[T, U]] = None):
+
+class SocraticBench(Generic[IN, OUT]):
+
+    def __init__(self, source: DataSource[IN], step: Optional[PipelineStep[Any, OUT]] = None):
         self._source = source
         self._last_step = step
 
     @classmethod
-    def from_data(cls: Type["SocraticBench[T]"], source: DataSource[T]) -> "SocraticBench[T]":
-        return cls(source)
+    def from_data(cls: Type["SocraticBench[IN, IN]"], source: DataSource[IN]) -> "SocraticBench[IN, IN]":
+        step = PipelineStep[IN, IN](previous=None, stage=Identity[IN]())
+        return cls(source, step)
 
-    def apply(self, stage: Stage[T, U]) -> 'SocraticBench[U]':
-        last_step = PipelineStep(self._last_step, stage)
-        return SocraticBench(self._source, last_step)
+    def apply(self: "SocraticBench[IN, T]", stage: Stage[T, U]) -> "SocraticBench[IN, U]":
+        last_step = PipelineStep[T, U](self._last_step, stage)
+        return SocraticBench[IN, U](self._source, last_step)
 
-    def batch(self: 'SocraticBench[T]') -> 'SocraticBench[List[T]]':
+    def batch(self: "SocraticBench[IN, T]") -> "SocraticBench[IN, List[T]]":
         buffered: BufferStage[T] = BufferStage()
         return self.apply(buffered)
 
-    def flatten(self: 'SocraticBench[List[U]]') -> 'SocraticBench[U]':
-        flattened: FlattenStage[U] = FlattenStage()
+    def flatten(self: "SocraticBench[IN, List[T]]") -> "SocraticBench[IN, T]":
+        flattened = FlattenStage[T]()
         return self.apply(flattened)
 
-    def run(self) -> Tuple[List[T], Dict[str, int]]:
+    def run(self) -> Tuple[List[OUT], Dict[str, int]]:
         tracker: Dict[str, int] = {}
-        sink: CollectSink[T] = CollectSink()
+        sink: CollectSink[OUT] = CollectSink()
         terminal: Emitter[None] = Emitter(None, None, tracker)
-        final_sink: Emitter[T] = Emitter(sink, terminal, tracker)
-        current_emitter = final_sink
+        final_sink: Emitter[OUT] = Emitter(sink, terminal, tracker)
+        current_emitter: Emitter[Any] = final_sink
 
         step = self._last_step
         while step and step.stage is not None:

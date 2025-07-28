@@ -1,6 +1,6 @@
 import abc
 import re
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 
 
 class LLMProcessingFailure(Exception):
@@ -32,7 +32,7 @@ class ConversationSeeder(abc.ABC):
         self._llm = llm
 
     @abc.abstractmethod
-    def gen_seed(self, source_content: str, **kwargs: Dict[str, str]) -> Tuple[str, str]:
+    def gen_seed(self, source_content: str, **kwargs: Any) -> Tuple[str, str]:
         ...
 
     @abc.abstractmethod
@@ -40,7 +40,7 @@ class ConversationSeeder(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def interaction_types(self) -> Tuple[Dict[str, str]]:
+    def interaction_types(self) -> Tuple[Dict[str, str], ...]:
         ...
 
     def seed_llm(self) -> LLM:
@@ -85,7 +85,7 @@ class ConversationSeederAgent(ConversationSeeder):
             "OUTPUT: [MAIN_TOPICS]{main_topics}[\MAIN_TOPICS]{question}[\QUESTION]"
         )
 
-    def interaction_types(self) -> Tuple[Dict[str, str]]:
+    def interaction_types(self) -> Tuple[Dict[str, str], ...]:
         return (
             {
                 "interaction_type": "Ask a general question about the main topic.",
@@ -122,7 +122,7 @@ class ConversationSeederAgent(ConversationSeeder):
             }
         )
 
-    def gen_seed(self, source_content: str, **kwargs: Dict[str, str]) -> Tuple[str, str]:
+    def gen_seed(self, source_content: str, **kwargs: Any) -> Tuple[str, str]:
         system_prompt = self.base_prompt().format(**kwargs)
         trials = 0
         output = ""
@@ -156,7 +156,7 @@ class Student(abc.ABC):
         self._llm = llm
 
     @abc.abstractmethod
-    def query(self, chat_history: str, **kwargs: Dict[str, str]) -> Tuple[str, bool]:
+    def query(self, chat_history: str, **kwargs: Any) -> Tuple[str, bool]:
         ...
 
     @abc.abstractmethod
@@ -168,7 +168,7 @@ class Student(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def student_types(self) -> Tuple[str]:
+    def student_types(self) -> Tuple[str, ...]:
         ...
 
     def llm(self) -> LLM:
@@ -262,7 +262,7 @@ class StudentAgent(Student):
     def message_prompt(self) -> str:
         return "# Main topics\n{main_topics}\n\n# Chat History\n{chat_history}\n\nOUTPUT: "
 
-    def student_types(self) -> Tuple[str]:
+    def student_types(self) -> Tuple[str, ...]:
         return (
             "You are a student who grasps and applies concepts effortlessly across domains. However, you tend to "
             "disengage or prematurely conclude discussions when the topic doesn't feel intellectually challenging or "
@@ -281,7 +281,7 @@ class StudentAgent(Student):
             "independent critical thinking skills and rely heavily on guidance or structure.",
         )
 
-    def query(self, chat_history: str, **kwargs: Dict[str, str]) -> Tuple[str, bool]:
+    def query(self, chat_history: str, **kwargs: Any) -> Tuple[str, bool]:
         system_prompt = self.system_prompt().format(**kwargs)
         source_content = self.message_prompt().format(chat_history=chat_history, **kwargs)
 
@@ -329,7 +329,7 @@ class Teacher(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def query(self, chat_history: str, **kwargs: Dict[str, str]) -> str:
+    def query(self, chat_history: str, **kwargs: Any) -> str:
         ...
 
     def llm(self) -> LLM:
@@ -379,7 +379,7 @@ class TeacherAgent(Teacher):
     def message_prompt(self) -> str:
         return "# Chat history\n{chat_history}\n\nOUTPUT: "
 
-    def query(self, chat_history: str, **kwargs: Dict[str, str]) -> str:
+    def query(self, chat_history: str, **kwargs: Any) -> str:
         content = self._llm.query([
             {"role": "system", "content": self.system_prompt().format(**kwargs)},
             {"role": "user", "content": self.message_prompt().format(chat_history=chat_history, **kwargs)}
@@ -400,7 +400,7 @@ class Judge(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def evaluate(self, main_topics: str, chat_history: str, **kwargs: Dict[str, str]) -> Tuple[str, Optional[bool]]:
+    def evaluate(self, main_topics: str, chat_history: str, **kwargs: Any) -> Tuple[str, Optional[bool]]:
         ...
 
     def llm(self) -> LLM:
@@ -561,7 +561,7 @@ class JudgeAgent(Judge):
         return "# Main Topics\n{main_topics}\n\n# Chat history\n{chat_history}\n\nEVALUATION: "
 
     def evaluate(
-            self, main_topics: str, chat_history: str, **kwargs: Dict[str, str]
+            self, main_topics: str, chat_history: str, **kwargs: Any
     ) -> Tuple[str, Optional[bool]]:
         assessment = self._llm.query([
             {

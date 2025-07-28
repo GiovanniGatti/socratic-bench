@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from openai import Client
 
-from agents import StudentAgent, TeacherAgent, JudgeAgent, ConversationSeederAgent
-from llms import OpenAILLM
-from pipeline import SocraticBench
-from readers import PrincetonChapters
-from schemas import Record
-from stages import SeedStage, ChatStage, EvaluationStage
+from socratic_bench.agents import StudentAgent, TeacherAgent, JudgeAgent, ConversationSeederAgent
+from socratic_bench.llms import OpenAILLM
+from socratic_bench.pipeline import SocraticBench
+from socratic_bench.readers import PrincetonChapters
+from socratic_bench.schemas import Record
+from socratic_bench.stages import SeedStage, ChatStage, EvaluationStage
 
 if __name__ == "__main__":
     client = Client()
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     judge = JudgeAgent(llm)
     seeder = ConversationSeederAgent(llm)
 
-    bench = SocraticBench.from_data(PrincetonChapters(Record, 2, 100))  # type: SocraticBench[Record]
+    bench = SocraticBench.from_data(PrincetonChapters(Record, 2, 100))
     seeded = bench.apply(SeedStage(seeder))
     batched = seeded.batch()
     chatted = batched.apply(ChatStage(student, teacher))

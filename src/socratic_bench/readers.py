@@ -1,9 +1,9 @@
 from typing import Generic, Type, Generator, TypeVar
 
-from datasets import load_dataset
+from datasets import load_dataset  # type: ignore[attr-defined] # missing stubs from HF
 
-from pipeline import DataSource
-from schemas import Seed
+from socratic_bench.pipeline import DataSource
+from socratic_bench.schemas import Seed
 
 T = TypeVar('T')
 
@@ -29,7 +29,7 @@ class PrincetonChapters(Generic[T], DataSource[T]):
             page = chapters[i]
             text: str = page["chapter"][:self._max_chapter_size]
 
-            record = self._record_cls(
+            record = self._record_cls(  # type: ignore[call-arg]  # keeping lightweight record instantiation
                 id=i,
                 seed=Seed(source_content=text),
             )

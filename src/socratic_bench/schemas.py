@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import pydantic
 
@@ -27,8 +27,8 @@ class Message(pydantic.BaseModel):
         return f"{self.role}: {self.content}"
 
 
-class ChatHistory(pydantic.RootModel):
-    root: list[Message]
+class ChatHistory(pydantic.RootModel):  # type: ignore[type-arg]  # ignore stubs from pydantic
+    root: List[Message]
 
     def __str__(self) -> str:
         return "\n".join(str(m) for m in self.root)

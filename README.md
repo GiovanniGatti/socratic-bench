@@ -38,8 +38,8 @@ understanding.
 
 ```python
 from openai import Client
-from agents import ConversationSeederAgent, StudentAgent, TeacherAgent, JudgeAgent
-from llms import OpenAILLM
+from socratic_bench.agents import ConversationSeederAgent, StudentAgent, TeacherAgent, JudgeAgent
+from socratic_bench.llms import OpenAILLM
 
 client = Client()
 llm = OpenAILLM("gpt-4o-mini", client)

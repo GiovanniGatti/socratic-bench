@@ -3,7 +3,7 @@ from typing import Union, Dict, List
 import openai
 from openai import NotGiven, NOT_GIVEN
 
-from agents import LLM
+from socratic_bench.agents import LLM
 
 
 class OpenAILLM(LLM):
@@ -15,9 +15,9 @@ class OpenAILLM(LLM):
 
     def query(self, messages: List[Dict[str, str]]) -> str:
         response = self._client.chat.completions.create(
-            model=self._model, messages=messages, temperature=self._temperature
+            model=self._model, messages=messages, temperature=self._temperature  # type: ignore[arg-type]
         )
-        return response.choices[0].message.content
+        return response.choices[0].message.content or ""
 
     def healthcheck(self) -> None:
         try:
