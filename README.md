@@ -5,7 +5,7 @@
 
 # SocraticBench
 
-![](./assets/banner.png =x250)
+<img src="./assets/banner.png" alt="drawing" style="height:350px;"/>
 
 `socratic-bench` is a research framework and benchmark dedicated to building and evaluating LLMs that teach by asking,
 not just answering — with a commitment to developing the best AI tutors for real learning.
