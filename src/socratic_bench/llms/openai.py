@@ -1,7 +1,10 @@
 from typing import Union, Dict, List
 
-import openai
-from openai import NotGiven, NOT_GIVEN
+try:
+    import openai
+    from openai import NotGiven, NOT_GIVEN
+except ImportError:
+    raise ImportError("missing openai dependencies, consider installing with `pip install socratic-bench[openai]`")
 
 from socratic_bench.agents import LLM
 

@@ -1,8 +1,11 @@
 import gc
 from typing import Dict, List, Mapping, Any, Optional
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore[import-untyped]
+try:
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore[import-untyped]
+except ImportError:
+    raise ImportError("missing HF transformers dependencies, consider installing with `pip install socratic-bench[hf]`")
 
 from socratic_bench.agents import LLM
 

@@ -12,7 +12,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -33,12 +32,14 @@ Issues = "https://github.com/GiovanniGatti/socratic-bench/issues"
 python = ">=3.11,<3.14"
 datasets = "4.0.0"
 pydantic = "^2.10.0"
+torch = { version = "^2.7.1", optional = true }
 transformers = { version = "^4.48.0", optional = true }
 openai = { version = "^1.97.1", optional = true }
 ollama = { version = "^0.4.8", optional = true }
+accelerate = { version = "^1.9.0", optional = true }
 
 [tool.poetry.extras]
-hf = ["transformers"]
+hf = ["transformers", "torch", "accelerate"]
 openai = ["openai"]
 ollama = ["ollama"]
 

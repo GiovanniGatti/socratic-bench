@@ -1,8 +1,11 @@
 from typing import Dict, List
 
-import httpx
-import ollama
-from ollama import ResponseError
+try:
+    import httpx
+    import ollama
+    from ollama import ResponseError
+except ImportError:
+    raise ImportError("missing ollama dependencies, consider installing with `pip install socratic-bench[ollama]`")
 
 from socratic_bench.agents import LLM
 
