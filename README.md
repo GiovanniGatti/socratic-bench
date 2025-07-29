@@ -239,14 +239,14 @@ Even education-tuned LLMs underperformed: Both GPT-4o and LearnLM 2.0 scored bel
 Conversations improve with more turns, but gains plateau around 8 dialogue rounds.
 
 <p align="center">
-![](./assets/success_rate_by_interaction_length.svg)
+<img src="./assets/success_rate_by_interaction_length.svg" alt=""/>
 </p>
 
 Why do LLMs fail? Common issues included not covering all topics or drifting off-topic. The core problem seems
 structural: LLMs are trained to respond, not to teach.
 
 <p align="center">
-![](./assets/pedagogical_properties.svg)
+<img src="./assets/pedagogical_properties.svg" alt=""/>
 </p>
 
 These results highlight a fundamental limitation of current LLMs: They’re not yet designed to lead structured,
