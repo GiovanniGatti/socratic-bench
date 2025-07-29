@@ -9,7 +9,7 @@
 <img src="./assets/banner.png" alt="drawing" style="height:350px;"/>
 </p>
 
-`socratic-bench` is a research framework and benchmark dedicated to building and evaluating LLMs that teach by asking,
+SocraticBench is a research framework and benchmark dedicated to building and evaluating LLMs that teach by asking,
 not just answering — with a commitment to developing the best AI tutors for real learning.
 
 ## 🧠 Motivation
@@ -21,7 +21,7 @@ The Socratic Method offers a powerful alternative — teaching through questions
 students to reflect, reason, and discover insights on their own. But today’s language models are rarely evaluated on
 their ability to teach Socratically.
 
-`socratic-bench` fills this gap. It is a research-grade library and benchmark for:
+SocraticBench fills this gap. It is a research-grade library and benchmark for:
 
 * Generating Socratic dialogues between a simulated teacher and student (both LLMs)
 * Evaluating conversations using a calibrated LLM-as-a-judge, trained to assess Socratic quality
@@ -52,7 +52,7 @@ topics, addressing the opening question, and respected the Socratic principles �
 
 # 🛠️ Installation
 
-You can use socratic-bench by installing it with:
+You can use SocraticBench by installing it with:
 
 ```bash
 pip install socratic-bench
