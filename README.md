@@ -48,7 +48,9 @@ discussion topics and an opening question. Two LLMs playing the roles of a teach
 following a loop. At the end of the conversation, an LLM-as-a-judge rates the conversation as successful — covering the
 topics, addressing the opening question, and respected the Socratic principles — or failed.
 
-![](./assets/pipeline.svg)
+<p align="center">
+<img src="./assets/pipeline.svg" alt="pipeline"/>
+</p>
 
 # 🛠️ Installation
 
