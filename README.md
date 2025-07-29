@@ -34,52 +34,126 @@ understanding.
 
 # 🧪 Usage
 
-1. Define your agents
+## Default benchmarking
 
 ```python
 from openai import Client
-from socratic_bench.agents import ConversationSeederAgent, StudentAgent, TeacherAgent, JudgeAgent
-from socratic_bench.llms import OpenAILLM
 
+from socratic_bench import StudentAgent, TeacherAgent, JudgeAgent, ConversationSeederAgent, socratic_bench, Record
+from socratic_bench.llms import OpenAILLM
+from socratic_bench.readers import PrincetonChapters
+
+# Define the LLM
 client = Client()
 llm = OpenAILLM("gpt-4o-mini", client)
 
+# Specify the agents
 seeder = ConversationSeederAgent(llm)
 student = StudentAgent(llm)
 teacher = TeacherAgent(llm)
 judge = JudgeAgent(llm)
+
+# Specify your data source
+data_source = PrincetonChapters(Record, num_conversations=2)
+
+# load the pipeline
+pipeline = socratic_bench(data_source, seeder, student, teacher, judge)
+
+# run it !
+results, stats = pipeline.run()
 ```
-
-2. Define your pipeline
-
-```bash
-from pipeline import SocraticBench, SeedStage, ChatStage, EvaluationStage, PrincetonChapters
-
-bench = (
-    SocraticBench.from_data(PrincetonChapters(record_cls=Record, num_conversations=100))
-    .apply(SeedStage(seeder))
-    .batch()
-    .apply(ChatStage(student, teacher, max_interactions=8))
-    .flatten()
-    .apply(EvaluationStage(judge))
-)
-```
-
-3. Run it
-
-```python
-results, stats = bench.run()
-```
-
-4. Inspect results
 
 Each Record in results contains:
 
 * `seed.question:` the student's initial question
 * `chat_history:` the full dialogue
 * `assessment:` whether the teacher passed the Socratic criteria
-* `feedback:` natural language explanation from the Judge agent
+* `feedback:` detailed explanation from the Judge agent decision
 * `failure:` flag indicating whether the record encountered processing issues
+
+## Composing your pipeline
+
+Let's say, for example, you want to compose your own pipeline by eliminating certain steps and adding new others. You
+can use the lower level API and create a mix of steps the way you wish. For example,
+
+```python
+from typing import List
+
+from socratic_bench import Record, DataSource
+from socratic_bench.agents import ConversationSeeder, Student, Teacher
+from socratic_bench.pipeline import SocraticBench, Emitter
+from socratic_bench.stages import SeedStage, Stage
+
+data_source: DataSource[Record] =  # ...
+seeder: ConversationSeeder =  # ...
+students: List[Student] =  # ...
+teacher: Teacher =  # ...
+
+
+class GroupChatStage(Stage[List[Record], List[Record]]):
+    """Chat stage that simulates a classroom"""
+
+    def __init__(self, students: List[Student], teacher: Teacher):
+        self._students = students
+        self._teacher = teacher
+
+    def process(self, sample: List[Record], emitter: Emitter[List[Record]]) -> None:
+        ...  # your custom implementation
+
+
+my_bench = (
+    SocraticBench.from_data(data_source)
+    .apply(SeedStage(seeder))  # standard seed generation
+    .batch()  # grouping records for batch processing
+    .apply(GroupChatStage(students, teacher))  # using a custom classroom for creating chat exchanges
+    .flatten()  # flattening groups
+    # .apply(EvaluationStage(judge)) -> You removed the evaluation step
+)
+
+results, stats = my_bench.run()
+```
+
+## Using local models
+
+The pipeline relies on the abstraction of `socratic_bench.agents.LLM` abstraction. In principle, you can implement this
+class and plug any LLM provider of your choice. We, however, provide three alternatives:
+
+### OpenAI
+
+```python
+from openai import Client
+from socratic_bench.llms import OpenAILLM
+
+client = Client()
+llm = OpenAILLM("gpt-4o-mini", client)
+```
+
+### Ollama
+
+```python
+from ollama import Client
+from socratic_bench.llms import OllamaLLM
+
+client = Client(host="http://localhost:11434")
+llm = OllamaLLM("mistral-small3.1:24b", client, num_ctx=5120, temperature=0.15)
+```
+
+### HF transformers
+
+```python
+import torch
+
+from socratic_bench.llms import HFLLM
+
+llm = HFLLM(
+    "mistralai/Mistral-Small-3.1-24B-Instruct-2503",
+    model_kwargs={
+        "trust_remote_code": True,
+        "device_map": "cuda",
+        "torch_dtype": torch.float16
+    }
+)
+```
 
 # 🔧 Extensibility
 
