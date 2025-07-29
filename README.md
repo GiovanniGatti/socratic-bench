@@ -202,9 +202,9 @@ We evaluated how well different LLMs can lead Socratic teaching dialogues by gen
 conversations between a simulated teacher and student.
 
 Our experiments compared a range of models — including Gemma 3, LLaMA 3.3, Mistral-Small 3.1, GPT-4o, LearnLM 2.0, and
-EULER (a fine-tuned Socratic LLM) — using the same seed questions and student model. An LLM-as-a-judge (Qwen 32B)
-evaluated whether each teacher successfully guided the student to a deep understanding. The results are displayed in the
-table bellow.
+[EULER](https://github.com/GiovanniGatti/socratic-llm) (a fine-tuned Socratic LLM) — using the same seed questions and
+student model. An LLM-as-a-judge (Qwen 32B) evaluated whether each teacher successfully guided the student to a deep
+understanding. The results are displayed in the table bellow.
 
 | **LLM**          | **Model Size (B)** | **Success Rate** | **95% CI**     |
 |------------------|--------------------|------------------|----------------|
