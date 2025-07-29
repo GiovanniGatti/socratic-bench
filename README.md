@@ -1,3 +1,8 @@
+![Made with Python](https://img.shields.io/badge/Made%20with-Python-blue.svg)
+![Python Versions](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-4a006a)
+![Coverage](https://img.shields.io/badge/Coverage-0%25-brightgreen)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 # SocraticBench
 
 `socratic-bench` is a research framework and benchmark dedicated to building and evaluating LLMs that teach by asking,
