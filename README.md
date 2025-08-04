@@ -196,6 +196,62 @@ llm = HFLLM(
 )
 ```
 
+## Pipeline Statistics
+
+It's possible to count statistics (e.g., errors) while processing pipeline steps. These statistics are reported at the
+end of the pipeline execution and can be used for pipeline debugging. To use those counters, you must declare them in
+the `Stage` implementation before using the `emitter.increment` method. For example,
+
+```python
+from typing import Any, Tuple, List, Generator
+
+from socratic_bench import DataSource
+from socratic_bench.pipeline import SocraticBench, Stage, Emitter
+
+
+class CountingStage(Stage[Any, Any]):
+    def counters(self) -> Tuple[str, ...]:
+        return ("processed",)
+
+    def process(self, sample: int, emitter: Emitter[Any]) -> None:
+        emitter.increment("processed")
+        emitter.emit(sample)
+
+
+class DummySource(DataSource[int]):
+    def __init__(self, data: List[int]):
+        self.data = data
+
+    def read(self) -> Generator[int, None, None]:
+        for x in self.data:
+            yield x
+
+
+source = DummySource([10, 20])
+bench = SocraticBench.from_data(source).apply(CountingStage())
+output, tracker = bench.run()
+
+print(tracker["processed"])
+# 2
+```
+
+The default pipeline (`socratic_bench`) produces the following counters:
+
+| **Counter Name**        | **Stage**         | **Description**                                                                                    | 
+|-------------------------|-------------------|----------------------------------------------------------------------------------------------------|
+| seed.in                 | `SeedStage`       | Number of input records                                                                            |
+| seed.missing            | `SeedStage`       | Number input records with missing seed (unprocessed)                                               |
+| seed.failure            | `SeedStage`       | Number of records that LLM failed to produce valid seeds (`failure=True`)                          |
+| seed.out                | `SeedStage`       | Number of output records (including failures)                                                      |
+| chat_stage.eligible     | `ChatStage`       | Number of valid input records for chat rollout                                                     |
+| chat_stage.failure      | `ChatStage`       | Number of records that LLM failed to produce a valid conversation (`failure=True`)                 |
+| chat_stage.success      | `ChatStage`       | Number of output records with a valid chat                                                         |
+| judge.in                | `EvaluationStage` | Number of input records (including rejected)                                                       |
+| judge.accepted          | `EvaluationStage` | Number of conversations with an accepted outcome                                                   |
+| judge.rejected          | `EvaluationStage` | Number of conversations with an rejected outcome                                                   |
+| judge.failed_evaluation | `EvaluationStage` | Number of conversations that the Judge LLM failed to produce a correct evaluation (`failure=True`) |
+| judge.out               | `EvaluationStage` | Number of output records (including rejected)                                                      |
+
 # 🔧 Extensibility
 
 You can implement your own custom:
