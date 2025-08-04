@@ -7,15 +7,40 @@ from socratic_bench.schemas import Record, Message, ChatHistory
 
 
 class SeedStage(Stage[Record, Record]):
+    """
+    Pipeline stage that seeds a record with an initial student question and main topics using a conversation seeder.
+    """
 
     def __init__(self, seeder: ConversationSeeder):
+        """
+        Initializes the stage with a conversation seeder.
+
+        Args:
+            seeder: An instance of a ConversationSeeder used to generate questions and topics.
+        """
         self._seeder = seeder
         self._num_interactions = len(self._seeder.interaction_types())
 
     def counters(self) -> Tuple[str, ...]:
+        """
+        Returns the set of counter names used during the seeding process.
+
+        Counters:
+            - seed.in: A sample entered the stage.
+            - seed.missing: Source content was missing.
+            - seed.failure: The seeder failed to generate output.
+            - seed.out: A sample was emitted from the stage.
+        """
         return "seed.in", "seed.missing", "seed.failure", "seed.out"
 
     def process(self, sample: Record, emitter: Emitter[Record]) -> None:
+        """
+        Processes a record by attempting to generate a seed question and topic from source content.
+
+        Args:
+            sample: The input record containing source content.
+            emitter: The emitter used to emit processed records and increment counters.
+        """
         interaction_type = random.choice(self._seeder.interaction_types())
 
         emitter.increment("seed.in")
@@ -47,16 +72,44 @@ class SeedStage(Stage[Record, Record]):
 
 
 class ChatStage(Stage[List[Record], List[Record]]):
+    """
+    Pipeline stage that simulates a Socratic conversation between a teacher and student.
+
+    Each record undergoes up to `max_interactions` message exchanges between the teacher and student agents.
+    """
 
     def __init__(self, student: Student, teacher: Teacher, max_interactions: int = 16):
+        """
+        Initializes the stage with student and teacher agents.
+
+        Args:
+            student: The simulated student agent.
+            teacher: The simulated teacher agent.
+            max_interactions: Maximum number of message exchanges in the chat (default: 16).
+        """
         self._student = student
         self._teacher = teacher
         self._max_interactions = max_interactions
 
     def counters(self) -> Tuple[str, ...]:
+        """
+        Returns the set of counter names used during the chat simulation.
+
+        Counters:
+            - chat_stage.eligible: Record has a valid seed and can begin chat.
+            - chat_stage.failure: An LLM failed during the conversation.
+            - chat_stage.success: Number of records completed without failure.
+        """
         return "chat_stage.eligible", "chat_stage.failure", "chat_stage.success"
 
     def process(self, sample: List[Record], emitter: Emitter[List[Record]]) -> None:
+        """
+        Simulates full conversations between the teacher and student for all eligible records in the batch.
+
+        Args:
+            sample: A list of records, each with a seed.
+            emitter: The emitter used to emit processed records and increment counters.
+        """
         for s in filter(lambda r: r.has_seed(), sample):
             chat_history = ChatHistory(
                 root=[
@@ -106,14 +159,44 @@ class ChatStage(Stage[List[Record], List[Record]]):
 
 
 class EvaluationStage(Stage[Record, Record]):
+    """
+    Pipeline stage that evaluates completed conversations using a judge agent to determine success.
+
+    Adds structured feedback and pass/fail assessment to each record.
+    """
 
     def __init__(self, judge: Judge):
+        """
+        Initializes the stage with a judge for evaluation.
+
+        Args:
+            judge: The evaluation agent used to score the Socratic interactions.
+        """
         self._judge = judge
 
     def counters(self) -> Tuple[str, ...]:
+        """
+        Returns the set of counter names used during the evaluation stage.
+
+        Counters:
+            - judge.in: A sample entered the evaluation stage.
+            - judge.accepted: The judge marked the sample as successful.
+            - judge.rejected: The judge marked the sample as unsuccessful.
+            - judge.failed_evaluation: Evaluation failed or returned an undecidable result.
+            - judge.out: A sample was emitted from the stage.
+        """
         return "judge.in", "judge.accepted", "judge.rejected", "judge.failed_evaluation", "judge.out"
 
     def process(self, sample: Record, emitter: Emitter[Record]) -> None:
+        """
+        Evaluates the sample using the judge if the conversation has finished and no prior failure occurred.
+
+        Adds feedback and pass/fail status to the record.
+
+        Args:
+            sample: The record to evaluate.
+            emitter: The emitter used to emit the result and update counters.
+        """
         sample.metadata.judge_llm = self._judge.llm().model_name
         emitter.increment("judge.in")
         if not sample.failure and sample.has_seed() and sample.chat_history and sample.chat_history.has_finished():

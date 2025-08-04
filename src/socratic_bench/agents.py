@@ -4,57 +4,111 @@ from typing import List, Dict, Tuple, Optional, Any
 
 
 class LLMProcessingFailure(Exception):
+    """
+    Exception raised when the language model repeatedly fails to produce valid output in the expected format.
+    """
+
     def __repr__(self):
         return str(self.args[0])
 
 
 class LLM(abc.ABC):
+    """
+    Abstract base class defining the interface for language model interactions.
+    """
 
     @abc.abstractmethod
     def query(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Sends a sequence of messages to the language model and returns the generated output.
+
+        Args:
+            messages: A list of dicts with "role" and "content" keys, simulating a conversation.
+
+        Returns:
+            The generated response as a string.
+        """
         ...
 
     @abc.abstractmethod
     def healthcheck(self) -> None:
+        """
+        Performs a health check to verify the model's availability and functionality.
+        """
         ...
 
     @property
     @abc.abstractmethod
     def model_name(self) -> str:
+        """
+        Returns the name or identifier of the underlying model.
+        """
         ...
 
     def unload(self) -> None:
+        """
+        Optionally releases any resources associated with the model.
+        """
         ...
 
 
 class ConversationSeeder(abc.ABC):
+    """
+    Abstract base class responsible for generating initial conversation seeds from source content using an LLM.
+    """
 
     def __init__(self, llm: LLM):
+        """
+        Initializes the seeder with a language model.
+
+        Args:
+            llm: An instance of a language model.
+        """
         self._llm = llm
 
     @abc.abstractmethod
     def gen_seed(self, source_content: str, **kwargs: Any) -> Tuple[str, str]:
+        """
+        Generates an initial question and corresponding main topics based on the source content.
+
+        Returns:
+            A tuple containing the generated question and a string describing the main topics.
+        """
         ...
 
     @abc.abstractmethod
     def base_prompt(self) -> str:
+        """
+        Returns the base system prompt template used to instruct the language model.
+        """
         ...
 
     @abc.abstractmethod
     def interaction_types(self) -> Tuple[Dict[str, str], ...]:
+        """
+        Returns a tuple of interaction type templates to generate varied seeding behavior.
+        """
         ...
 
     def seed_llm(self) -> LLM:
+        """
+        Returns the language model used by the seeder.
+        """
         return self._llm
 
 
 class ConversationSeederAgent(ConversationSeeder):
+    """
+    Concrete implementation of ConversationSeeder that retries generation on malformed output.
+    """
 
     def __init__(self, llm: LLM, max_trials: int = 10):
         """
+        Initializes the agent with a language model and maximum number of trials.
+
         Args:
-            llm: The language model used for seed generation.
-            max_trials: Number of attempts to retry on malformed LLM output.
+            llm: The language model to use.
+            max_trials: Maximum number of retry attempts on malformed output.
         """
         super().__init__(llm)
         self._max_trials = max_trials
@@ -124,6 +178,12 @@ class ConversationSeederAgent(ConversationSeeder):
         )
 
     def gen_seed(self, source_content: str, **kwargs: Any) -> Tuple[str, str]:
+        """
+        Generates a student question and main topics from the source content, retrying on failure.
+
+        Raises:
+            LLMProcessingFailure: If all retry attempts fail to produce valid output.
+        """
         system_prompt = self.base_prompt().format(**kwargs)
         trials = 0
         output = ""
@@ -152,33 +212,64 @@ class ConversationSeederAgent(ConversationSeeder):
 
 
 class Student(abc.ABC):
+    """
+    Abstract base class defining a simulated student that interacts with the teacher using an LLM.
+    """
 
     def __init__(self, llm: LLM):
         self._llm = llm
 
     @abc.abstractmethod
     def query(self, chat_history: str, **kwargs: Any) -> Tuple[str, bool]:
+        """
+        Generates the student's next message in the conversation.
+
+        Returns:
+            A tuple of the student's response and a boolean indicating whether to end the conversation.
+        """
         ...
 
     @abc.abstractmethod
     def system_prompt(self) -> str:
+        """
+        Returns the system prompt used to instruct the LLM for student behavior.
+        """
         ...
 
     @abc.abstractmethod
     def message_prompt(self) -> str:
+        """
+        Returns the message prompt that wraps the student's chat history.
+        """
         ...
 
     @abc.abstractmethod
     def student_types(self) -> Tuple[str, ...]:
+        """
+        Returns a tuple of predefined student personality types for modeling different interaction styles.
+        """
         ...
 
     def llm(self) -> LLM:
+        """
+        Returns the LLM used by the student.
+        """
         return self._llm
 
 
 class StudentAgent(Student):
+    """
+    Concrete implementation of a student that generates dialogue using an LLM and retry logic.
+    """
 
     def __init__(self, llm: LLM, max_trials: int = 10):
+        """
+        Initializes the agent with a language model and retry limit.
+
+        Args:
+            llm: The language model to use.
+            max_trials: Maximum number of retry attempts on malformed output.
+        """
         super().__init__(llm)
         self._max_trials = max_trials
 
@@ -283,6 +374,15 @@ class StudentAgent(Student):
         )
 
     def query(self, chat_history: str, **kwargs: Any) -> Tuple[str, bool]:
+        """
+        Generates the student's next message and continuation decision, retrying if output format is incorrect.
+
+        Returns:
+            A tuple of the generated student response and a boolean indicating whether to end the conversation.
+
+        Raises:
+            LLMProcessingFailure: If no valid output is generated after all trials.
+        """
         system_prompt = self.system_prompt().format(**kwargs)
         source_content = self.message_prompt().format(chat_history=chat_history, **kwargs)
 
@@ -317,20 +417,32 @@ class StudentAgent(Student):
 
 
 class Teacher(abc.ABC):
+    """
+    Abstract base class defining a Socratic teacher using an LLM to guide the student through questioning.
+    """
 
     def __init__(self, llm: LLM):
         self._llm = llm
 
     @abc.abstractmethod
     def system_prompt(self) -> str:
+        """
+        Returns the system prompt instructing the teacher on Socratic teaching behavior.
+        """
         ...
 
     @abc.abstractmethod
     def message_prompt(self) -> str:
+        """
+        Returns the message prompt wrapping the conversation history.
+        """
         ...
 
     @abc.abstractmethod
     def query(self, chat_history: str, **kwargs: Any) -> str:
+        """
+        Generates the teacher’s next Socratic question or feedback based on the conversation history.
+        """
         ...
 
     def llm(self) -> LLM:
@@ -338,6 +450,9 @@ class Teacher(abc.ABC):
 
 
 class TeacherAgent(Teacher):
+    """
+    Concrete implementation of a Socratic teacher using structured prompts and chat history context.
+    """
 
     def system_prompt(self) -> str:
         return (
@@ -381,6 +496,9 @@ class TeacherAgent(Teacher):
         return "# Chat history\n{chat_history}\n\nOUTPUT: "
 
     def query(self, chat_history: str, **kwargs: Any) -> str:
+        """
+        Generates a teacher response using the conversation history and Socratic teaching principles.
+        """
         content = self._llm.query([
             {"role": "system", "content": self.system_prompt().format(**kwargs)},
             {"role": "user", "content": self.message_prompt().format(chat_history=chat_history, **kwargs)}
@@ -389,19 +507,36 @@ class TeacherAgent(Teacher):
 
 
 class Judge(abc.ABC):
+    """
+    Abstract base class for evaluating the effectiveness of Socratic conversations.
+    """
+
     def __init__(self, llm: LLM):
         self._llm = llm
 
     @abc.abstractmethod
     def system_prompt(self) -> str:
+        """
+        Returns the system prompt defining evaluation criteria and rules.
+        """
         ...
 
     @abc.abstractmethod
     def message_prompt(self) -> str:
+        """
+        Returns the formatted evaluation prompt with the main topics and chat history.
+        """
         ...
 
     @abc.abstractmethod
     def evaluate(self, main_topics: str, chat_history: str, **kwargs: Any) -> Tuple[str, Optional[bool]]:
+        """
+        Evaluates the teacher-student interaction using predefined rubric and LLM output.
+
+        Returns:
+            A tuple containing the feedback summary and a boolean indicating pass/fail assessment, or None if
+            undecidable.
+        """
         ...
 
     def llm(self) -> LLM:
@@ -409,6 +544,9 @@ class Judge(abc.ABC):
 
 
 class JudgeAgent(Judge):
+    """
+    Concrete implementation of a Judge that evaluates Socratic dialogue outcomes using a structured rubric.
+    """
 
     def __init__(self, llm: LLM):
         super().__init__(llm)
@@ -564,6 +702,12 @@ class JudgeAgent(Judge):
     def evaluate(
             self, main_topics: str, chat_history: str, **kwargs: Any
     ) -> Tuple[str, Optional[bool]]:
+        """
+        Evaluates a teacher-student conversation and determines if all Socratic principles were followed.
+
+        Returns:
+            A tuple with feedback text and a boolean success indicator, or None if undecidable.
+        """
         assessment = self._llm.query([
             {
                 "role": "system", "content": self.system_prompt().format(**kwargs)
