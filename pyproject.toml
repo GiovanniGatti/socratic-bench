@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Text Processing :: Linguistic"
 ]
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.10,<3.14"
 dependnecies = ["datasets==4.0.0", "pydantic>=2.10.0"]
 
 [project.optional-dependencies]
