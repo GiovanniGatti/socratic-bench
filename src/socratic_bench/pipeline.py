@@ -21,13 +21,21 @@ class Emitter(Generic[T]):
         self._next_emitter = next_emitter
         self._tracker = tracker
 
+        if stage:
+            for c in stage.counters():
+                if c in self._tracker:
+                    raise ValueError(f"counter {c} already declared")
+                self._tracker[c] = 0
+
     def emit(self, sample: T) -> None:
         if self._stage and self._next_emitter:
             self._stage.process(sample, self._next_emitter)
             self._stage.cleanup(self._next_emitter)
 
     def increment(self, name: str, value: int = 1) -> None:
-        self._tracker[name] = self._tracker.get(name, 0) + value
+        if name not in self._tracker:
+            raise ValueError(f"undeclared counter {name}")
+        self._tracker[name] = self._tracker[name] + value
 
 
 class Stage(Generic[T, U], abc.ABC):
@@ -38,6 +46,9 @@ class Stage(Generic[T, U], abc.ABC):
 
     def cleanup(self, emitter: Emitter[U]) -> None:
         ...
+
+    def counters(self) -> Tuple[str, ...]:
+        return ()
 
 
 class DataSource(Generic[T], abc.ABC):

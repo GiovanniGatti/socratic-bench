@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Tuple
 
 from socratic_bench.agents import Judge, LLMProcessingFailure, ConversationSeeder, Student, Teacher
 from socratic_bench.pipeline import Stage, Emitter
@@ -11,7 +11,9 @@ class SeedStage(Stage[Record, Record]):
     def __init__(self, seeder: ConversationSeeder):
         self._seeder = seeder
         self._num_interactions = len(self._seeder.interaction_types())
-        self._id = 0
+
+    def counters(self) -> Tuple[str, ...]:
+        return "seed.in", "seed.missing", "seed.failure", "seed.out"
 
     def process(self, sample: Record, emitter: Emitter[Record]) -> None:
         interaction_type = random.choice(self._seeder.interaction_types())
@@ -41,7 +43,6 @@ class SeedStage(Stage[Record, Record]):
 
         emitter.emit(sample)
 
-        self._id += 1
         emitter.increment("seed.out")
 
 
@@ -51,6 +52,9 @@ class ChatStage(Stage[List[Record], List[Record]]):
         self._student = student
         self._teacher = teacher
         self._max_interactions = max_interactions
+
+    def counters(self) -> Tuple[str, ...]:
+        return "chat_stage.eligible", "chat_stage.failure", "chat_stage.success"
 
     def process(self, sample: List[Record], emitter: Emitter[List[Record]]) -> None:
         for s in filter(lambda r: r.has_seed(), sample):
@@ -105,6 +109,9 @@ class EvaluationStage(Stage[Record, Record]):
 
     def __init__(self, judge: Judge):
         self._judge = judge
+
+    def counters(self) -> Tuple[str, ...]:
+        return "judge.in", "judge.accepted", "judge.rejected", "judge.failed_evaluation", "judge.out"
 
     def process(self, sample: Record, emitter: Emitter[Record]) -> None:
         sample.metadata.judge_llm = self._judge.llm().model_name

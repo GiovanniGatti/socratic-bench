@@ -4,7 +4,8 @@ from typing import List, Dict, Tuple, Optional, Any
 
 
 class LLMProcessingFailure(Exception):
-    ...
+    def __repr__(self):
+        return str(self.args[0])
 
 
 class LLM(abc.ABC):
